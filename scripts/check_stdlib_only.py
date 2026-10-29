@@ -1,38 +1,38 @@
-﻿"""Fail if tracegrade imports anything outside the standard library.
+﻿"""Fail if the package imports anything outside the standard library.
 
-tracegrade advertises zero runtime dependencies; this keeps that honest.
+The project advertises zero runtime dependencies; this keeps that honest.
 """
 
 from __future__ import annotations
 
 import ast
 import pathlib
+import pkgutil
 import sys
 import sysconfig
+
+PACKAGE = "tracegrade"
 
 
 def stdlib_names() -> set:
     names = getattr(sys, "stdlib_module_names", None)
     if names is not None:
-        return set(names) | {"tracegrade", "builtins", "__future__"}
-    # Python 3.9 fallback: list the standard library directory.
+        return set(names) | {PACKAGE, "builtins", "__future__"}
+    # Python 3.9 fallback: enumerate the standard library directory. pkgutil
+    # understands .py files, packages, and extension modules (.so/.pyd), which
+    # is what a plain directory listing would miss for modules like math.
     root = pathlib.Path(sysconfig.get_paths()["stdlib"])
-    found = {"tracegrade", "builtins", "__future__", "sys"}
+    found = {PACKAGE, "builtins", "__future__", "sys"}
     found.update(sys.builtin_module_names)
-    for entry in root.iterdir():
-        if entry.name in ("site-packages", "dist-packages"):
-            continue
-        if entry.suffix == ".py":
-            found.add(entry.stem)
-        elif entry.is_dir() and (entry / "__init__.py").exists():
-            found.add(entry.name)
+    for _, name, _ in pkgutil.iter_modules([str(root)]):
+        found.add(name)
     return found
 
 
 def main() -> int:
     allowed = stdlib_names()
     bad = []
-    for path in sorted(pathlib.Path("tracegrade").rglob("*.py")):
+    for path in sorted(pathlib.Path(PACKAGE).rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
