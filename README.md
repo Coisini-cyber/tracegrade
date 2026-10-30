@@ -1,5 +1,7 @@
 # tracegrade
 
+[![ci](https://github.com/Coisini-cyber/tracegrade/actions/workflows/ci.yml/badge.svg)](https://github.com/Coisini-cyber/tracegrade/actions/workflows/ci.yml)
+
 **Turn production agent traces into replayable regression evals.**
 
 You already have the test cases. They are sitting in your logs: real inputs,
